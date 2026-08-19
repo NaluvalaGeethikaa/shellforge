@@ -1,14 +1,22 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c11 -Iinclude
-LIBS = -lreadline
-TARGET = shellforge
+LDFLAGS = -lreadline
 
-SRCS = src/history.c src/lexer.c src/main.c src/token.c
+SRC = src/history.c \
+      src/lexer.c \
+      src/token.c \
+      src/parser.c \
+      src/expand.c \
+      src/main.c
+
+TARGET = shellforge
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS)
-	$(CC) $(CFLAGS) $(SRCS) $(LIBS) -o $(TARGET)
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) $(SRC) $(LDFLAGS) -o $(TARGET)
 
 clean:
 	rm -f $(TARGET)
+
+.PHONY: all clean

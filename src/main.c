@@ -1,57 +1,80 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 
-#include "token.h"
-#include "lexer.h"
-#include "history.h"
+#include "parser.h"
+#include "expand.h"
 
-int main(void) {
-    printf("=========================================\n");
-    printf("               Shellforge                \n");
-    printf("  A Unix Style Shell written in C       \n");
-    printf("=========================================\n");
+#define MAX_INPUT 4096
 
-    char *line = NULL;
-    token_list_t token_list;
+int main(void)
+{
+    char input[MAX_INPUT];
 
-    while (1) {
-        line = readline("shellforge$ ");
-        
-        if (!line) { // EOF or Ctrl+D
-            printf("\nExiting...\n");
-            break;
-        }
+    printf("====================================\n");
+    printf("        Simple C Parser\n");
+    printf("====================================\n");
 
-        if (strlen(line) == 0) {
-            free(line);
-            continue;
-        }
+    printf("Enter C code:\n");
+    printf("> ");
 
-        history_add(line);
-        add_history(line);
-
-        if (strcmp(line, "exit") == 0) {
-            printf("Exiting...\n");
-            free(line);
-            break;
-        }
-
-        if (strcmp(line, "history") == 0) {
-            history_print();
-            free(line);
-            continue;
-        }
-
-        // Tokenize and print the output table
-        if (lexer(line, &token_list) == 0) {
-            token_print(&token_list);
-        }
-
-        free(line);
+    if (fgets(input, sizeof(input), stdin) == NULL)
+    {
+        fprintf(stderr, "Error: Failed to read input.\n");
+        return 1;
     }
+
+    /* Initialize macro table */
+    MacroTable table;
+    expand_init(&table);
+
+    /* Example macros */
+    expand_add_macro(&table, "PI", "3.14");
+    expand_add_macro(&table, "SIZE", "10");
+
+    /* Remove comments */
+    char *without_comments = expand_remove_comments(input);
+
+    if (without_comments == NULL)
+    {
+        fprintf(stderr, "Error: Could not remove comments.\n");
+        return 1;
+    }
+
+    /* Expand macros */
+    char *expanded = expand_macros(&table, without_comments);
+
+    if (expanded == NULL)
+    {
+        fprintf(stderr, "Error: Could not expand macros.\n");
+        free(without_comments);
+        return 1;
+    }
+
+    printf("\n------------------------------------\n");
+    printf("After preprocessing:\n");
+    printf("------------------------------------\n");
+    printf("%s\n", expanded);
+
+    /* Initialize parser */
+    Parser parser;
+
+    parser_init(&parser, expanded);
+
+    printf("------------------------------------\n");
+    printf("Tokens:\n");
+    printf("------------------------------------\n");
+
+    /* Parse input */
+    parser_parse(&parser);
+
+    /* Free memory */
+    expand_free(without_comments);
+    expand_free(expanded);
+
+    printf("------------------------------------\n");
+    printf("Parsing completed.\n");
+    printf("------------------------------------\n");
 
     return 0;
 }

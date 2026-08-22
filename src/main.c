@@ -7,20 +7,79 @@
 #define MAX_INPUT 1024
 #define MAX_ARGS 64
 
-void parse_input(char *input, char **args)
+
+/*
+ * Parse input into argv-style arguments.
+ */
+int parse_input(char *input, char **args)
 {
-    int i = 0;
+    int argc = 0;
 
-    char *token = strtok(input, " \t\n");
+    char *token = strtok(input, " \t\r\n");
 
-    while (token != NULL && i < MAX_ARGS - 1) {
-        args[i++] = token;
-        token = strtok(NULL, " \t\n");
+    while (token != NULL && argc < MAX_ARGS - 1) {
+
+        args[argc] = token;
+        argc++;
+
+        token = strtok(NULL, " \t\r\n");
     }
 
-    args[i] = NULL;
+    args[argc] = NULL;
+
+    return argc;
 }
 
+
+/*
+ * Display tokens in ShellForge format.
+ */
+void display_tokens(char **args, int argc)
+{
+    int i;
+
+    printf("\n-------------- TOKENS --------------\n");
+
+    for (i = 0; i < argc; i++) {
+
+        printf("%d : WORD        %s\n", i, args[i]);
+    }
+
+    printf("%d : END         END\n", argc);
+
+    printf("------------------------------------\n");
+}
+
+
+/*
+ * Display pipeline information.
+ */
+void display_pipeline(char **args)
+{
+    printf("\n========== PIPELINE ==========\n\n");
+
+    printf("Command 1\n");
+    printf("------------------------------\n");
+
+    printf("Arguments\n");
+
+    for (int i = 0; args[i] != NULL; i++) {
+
+        printf("argv[%d] = %s\n", i, args[i]);
+    }
+
+    printf("Input      : None\n");
+    printf("Output     : None\n");
+    printf("Append     : No\n");
+    printf("Background : No\n");
+
+    printf("==============================\n");
+}
+
+
+/*
+ * Main ShellForge loop.
+ */
 int main(void)
 {
     char input[MAX_INPUT];
@@ -28,37 +87,65 @@ int main(void)
 
     while (1) {
 
+        /*
+         * Shell prompt
+         */
         printf("shellforge$ ");
         fflush(stdout);
 
+
+        /*
+         * Read input.
+         */
         if (fgets(input, sizeof(input), stdin) == NULL) {
+
             printf("\n");
             break;
         }
 
+
+        /*
+         * Ignore empty input.
+         */
         if (input[0] == '\n') {
             continue;
         }
 
-        parse_input(input, args);
 
         /*
-         * Execute builtin commands.
-         *
-         * builtin_execute returns:
-         * 1 -> command was builtin
-         * 0 -> command was not builtin
+         * Parse command.
          */
+        int argc = parse_input(input, args);
 
+        if (argc == 0) {
+            continue;
+        }
+
+
+        /*
+         * Display TOKENS.
+         */
+        display_tokens(args, argc);
+
+
+        /*
+         * Display PIPELINE.
+         */
+        display_pipeline(args);
+
+
+        /*
+         * Execute builtin.
+         */
         if (builtin_execute(args)) {
             continue;
         }
 
+
         /*
-         * For now, non-builtin commands are not handled
+         * External commands are not implemented
          * in this milestone.
          */
-
         printf("shellforge: command not found: %s\n", args[0]);
     }
 
